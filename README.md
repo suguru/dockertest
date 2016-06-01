@@ -1,6 +1,9 @@
 dockertest
 =====
 
+[![Build Status](https://travis-ci.org/suguru/dockertest.svg?branch=master)](https://travis-ci.org/suguru/dockertest)
+[![codecov](https://codecov.io/gh/suguru/dockertest/branch/master/graph/badge.svg)](https://codecov.io/gh/suguru/dockertest)
+
 dockertest is golang test tool to launch docker container every test running. 
 
 

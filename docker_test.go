@@ -32,7 +32,8 @@ func TestRun(t *testing.T) {
 
 	con := Run("redis")
 	defer con.Close()
-	require.Equal(t, "127.0.0.1", con.host)
+
+	require.Equal(t, "127.0.0.1", con.Host())
 
 	port := con.ports[6379]
 
