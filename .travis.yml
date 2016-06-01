@@ -1,0 +1,15 @@
+language: go
+sudo: false
+
+go:
+  - 1.6.2
+
+before_install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/stretchr/testify/require
+
+script:
+  - go test -v -coverprofile=coverage.txt -covermode=count
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
