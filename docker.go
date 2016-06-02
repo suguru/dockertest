@@ -88,7 +88,7 @@ func (c *Container) WaitPort(port int, timeout time.Duration) int {
 
 	_, err := net.DialTimeout(nw, c.Addr(port), timeout)
 	if err != nil {
-		log.Fatalln("port not available for %f seconds", timeout.Seconds())
+		log.Fatalf("port not available for %f seconds", timeout.Seconds())
 	}
 	return p
 }
