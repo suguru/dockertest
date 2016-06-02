@@ -86,9 +86,18 @@ func (c *Container) WaitPort(port int, timeout time.Duration) int {
 		log.Fatalf("network not described on %s", c.image)
 	}
 
-	_, err := net.DialTimeout(nw, c.Addr(port), timeout)
-	if err != nil {
-		log.Fatalf("port not available for %f seconds", timeout.Seconds())
+	end := time.Now().Add(timeout)
+	for {
+		now := time.Now()
+		_, err := net.DialTimeout(nw, c.Addr(port), end.Sub(now))
+		if err != nil {
+			if time.Now().After(end) {
+				log.Fatalf("port %d not available on %s for %f seconds", port, c.image, timeout.Seconds())
+			}
+			time.Sleep(time.Second)
+			continue
+		}
+		break
 	}
 	return p
 }
