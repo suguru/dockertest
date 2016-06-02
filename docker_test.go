@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -39,5 +40,25 @@ func TestRun(t *testing.T) {
 
 	require.Equal(t, net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), con.Addr(6379))
 	require.Equal(t, port, con.Port(6379))
+
+}
+
+func TestWaitPort(t *testing.T) {
+
+	con := Run("redis")
+	defer con.Close()
+
+	p := con.WaitPort(6379, 1*time.Second)
+	require.NotZero(t, p)
+
+}
+
+func TestWaitHTTP(t *testing.T) {
+
+	con := Run("nginx")
+	defer con.Close()
+
+	p := con.WaitHTTP(80, "/", 1*time.Second)
+	require.NotZero(t, p)
 
 }

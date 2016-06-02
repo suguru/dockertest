@@ -58,3 +58,22 @@ func testRun(m *testing.M) {
   return m.Run()
 }
 ```
+
+Wait until container network ports
+---
+
+Waiting until port opened.
+
+```go
+c := dockertest.Run("redis")
+c.WaitPort(6379, 5 * time.Second)
+addr := c.Addr(6379)
+```
+
+Waiting until HTTP returns valid status code(200-299).
+
+```go
+c := dockertest.Run("redis")
+c.WaitHTTP(6379, "/", 5 * time.Second)
+addr := c.Addr(6379)
+```

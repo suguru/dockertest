@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -64,7 +65,8 @@ func (c *Container) Host() string {
 	return c.host
 }
 
-func (c *Container) waitPort(port int) int {
+// WaitPort waits until port available.
+func (c *Container) WaitPort(port int, timeout time.Duration) int {
 	// wait until port available
 	p := c.ports[port]
 	if p == 0 {
@@ -76,31 +78,54 @@ func (c *Container) waitPort(port int) int {
 		log.Fatalf("network not described on %s", c.image)
 	}
 
-	left := 10
-	for {
-		if left <= 0 {
-			log.Fatalln("port not available for 10 seconds")
-		}
-		c, err := net.Dial(nw, net.JoinHostPort(c.host, strconv.Itoa(p)))
-		if err == nil {
-			c.Close()
-			break
-		}
-		time.Sleep(1 * time.Second)
-		left--
+	_, err := net.DialTimeout(nw, c.Addr(port), timeout)
+	if err != nil {
+		log.Fatalln("port not available for %f seconds", timeout.Seconds())
 	}
+	return p
+}
 
+// WaitHTTP waits until http available
+func (c *Container) WaitHTTP(port int, path string, timeout time.Duration) int {
+	p := c.ports[port]
+	if p == 0 {
+		log.Fatalf("port %d is not exposed on %s", port, c.image)
+	}
+	now := time.Now()
+	end := now.Add(timeout)
+	for {
+		cli := http.Client{Timeout: timeout}
+		res, err := cli.Get("http://" + c.Addr(port) + path)
+		if err != nil {
+			if time.Now().After(end) {
+				log.Fatalf("http not available on port %d for %s err:%v", port, c.image, err)
+			}
+			// sleep 1 sec to retry
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode >= 300 {
+			if time.Now().After(end) {
+				log.Fatalf("http has not valid status code on port %d for %s code:%d", port, c.image, res.StatusCode)
+			}
+			// sleep 1 sec to retry
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
+	}
 	return p
 }
 
 // Port returns exposed port in docker host.
 func (c *Container) Port(port int) int {
-	return c.waitPort(port)
+	return c.ports[port]
 }
 
 // Addr returns exposed address like 127.0.0.1:6379.
 func (c *Container) Addr(port int) string {
-	exposed := c.waitPort(port)
+	exposed := c.Port(port)
 	return net.JoinHostPort(c.host, strconv.Itoa(exposed))
 }
 
