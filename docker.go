@@ -2,6 +2,7 @@ package dockertest
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -30,10 +31,16 @@ type Container struct {
 func Run(image string, args ...string) *Container {
 
 	// run and get containerID
-	containerID := run("docker", append([]string{"run", "-P", "-d", image}, args...)...)
+	containerID, err := run("docker", append([]string{"run", "-P", "-d", image}, args...)...)
+	if err != nil {
+		log.Fatalf("failed run docker image:%s args:%v", image, args)
+	}
 
 	// get port map
-	ports := run("docker", "port", containerID)
+	ports, err := run("docker", "port", containerID)
+	if err != nil {
+		log.Fatalf("failed get ports image:%s", image)
+	}
 
 	host := "127.0.0.1"
 
@@ -53,6 +60,7 @@ func Run(image string, args ...string) *Container {
 
 // Close docker containerg.
 func (c *Container) Close() {
+	// ignore errors on stop, wait and remove
 	run("docker", "stop", c.containerID)
 	// wait until docker stops
 	run("docker", "wait", c.containerID)
@@ -130,7 +138,7 @@ func (c *Container) Addr(port int) string {
 }
 
 // run command and get result.
-func run(name string, args ...string) (out string) {
+func run(name string, args ...string) (out string, err error) {
 
 	cmd := exec.Command(name, args...)
 
@@ -140,15 +148,15 @@ func run(name string, args ...string) (out string) {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("command failed %s %v err:%v", name, args, err)
+	if err = cmd.Run(); err != nil {
+		return
 	}
 
 	if cmd.ProcessState.Success() {
-		return strings.TrimSpace(stdout.String())
+		return strings.TrimSpace(stdout.String()), nil
 	}
 
-	log.Fatalf("command execution failed %v", stderr.String())
+	err = errors.New("command execution failed " + stderr.String())
 	return
 }
 
