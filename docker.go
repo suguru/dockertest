@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	ipRegex   = regexp.MustCompile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`)
 	portRegex = regexp.MustCompile(`([0-9]+)\/(.+?)\s\->.+?:([0-9]+)`)
 )
 
@@ -42,18 +43,18 @@ func Run(image string, args ...string) *Container {
 		log.Fatalf("failed get ports image:%s", image)
 	}
 
-	host := "127.0.0.1"
+	c := &Container{
+		containerID: containerID,
+		image:       image,
+	}
 
+	host := "127.0.0.1"
 	// for docker-machine
 	if os.Getenv("DOCKER_HOST") != "" {
 		host = os.Getenv("DOCKER_HOST")
 	}
+	c.parseIp(host)
 
-	c := &Container{
-		containerID: containerID,
-		image:       image,
-		host:        host,
-	}
 	c.parsePorts(ports)
 	return c
 }
@@ -182,4 +183,9 @@ func (c *Container) parsePorts(lines string) {
 		c.networks[p1] = match[2]
 	}
 
+}
+
+func (c *Container) parseIp(ip string) {
+	fnd := ipRegex.FindString(ip)
+	c.host = fnd
 }
