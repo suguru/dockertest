@@ -62,3 +62,13 @@ func TestWaitHTTP(t *testing.T) {
 	require.NotZero(t, p)
 
 }
+
+func TestRunEnvs(t *testing.T) {
+
+	con := RunEnvs("mysql", map[string]string{"MYSQL_ROOT_PASSWORD": "test"})
+	defer con.Close()
+
+	p := con.WaitPort(3306, 1*time.Second)
+	require.NotZero(t, p)
+
+}

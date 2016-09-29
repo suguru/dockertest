@@ -29,9 +29,22 @@ type Container struct {
 
 // Run image and returns docker container.
 func Run(image string, args ...string) *Container {
+	return RunEnvs(image, nil, args...)
+}
+
+// RunEnvs image with environment variables and returns docker container.
+func RunEnvs(image string, envs map[string]string, args ...string) *Container {
+	cmdargs := []string{"run", "-P", "-d"}
+
+	// append environment variables
+	for k, v := range envs {
+		cmdargs = append(cmdargs, "-e", k+"="+v)
+	}
+	cmdargs = append(cmdargs, args...)
+	cmdargs = append(cmdargs, image)
 
 	// run and get containerID
-	containerID, err := run("docker", append([]string{"run", "-P", "-d", image}, args...)...)
+	containerID, err := run("docker", cmdargs...)
 	if err != nil {
 		log.Fatalf("failed run docker image:%s args:%v", image, args)
 	}
